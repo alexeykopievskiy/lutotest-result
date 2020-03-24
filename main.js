@@ -1,13 +1,30 @@
+const fetch = require("node-fetch");
+
 // Эта функция по идее должна быть импортирована,
 // но упрощено и нужно её простейшим образом реализовать
 const serverApiRequest = async a => {
+	try {
+		let response = await fetch("http://t.syshub.ru" + a);
+		return await response.json();
+	}
+	catch (err) {
+		return err;
+	}
   /*simulate request*/
-  return fetch("//t.syshub.ru" + a);
 };
 
 // Можно выполнить по аналогии с serverApiRequest(), а можно лучше, см. подсказку ниже
-const sendAnalytics = (a, b) => {
+const sendAnalytics = async (a, b) => {
   /*sendBeacon maybe*/
+	let url = "http://t.syshub.ru" + a;
+		
+	try {
+		// Иммитация sendBeacon (теоретическая), так как sendBeacon требует Navigator, который недоступен на севрере
+		const resp = await fetch(url, {method: "POST", body: {"data": [b]}})
+	}
+	catch (err) {
+		return err;
+	}
 };
 
 /* Нужно:
@@ -18,15 +35,28 @@ const sendAnalytics = (a, b) => {
 */
 const requestData = async ({ id, param }) => {
   // should return [null, {v: 1}, {v: 4}, null] or Error (may return array (null | {v: number})[])
-  var array = await serverApiRequest("/query/data/" + id + "/param/" + param);
-	console.log(array)
-
-  // after complete request if *not* Error returned
-  sendAnalytics("/requestDone", {
-    type: "data",
-    id: id,
-    param: param
-  });
+	let array;
+	
+	try {
+		array = await serverApiRequest("/query/data/" + id + "/param/" + param);
+			
+		//after complete request if *not* Error returned
+		sendAnalytics("/requestDone", {
+			type: "data",
+			id: id,
+			param: param
+		});
+		
+	}
+	catch (err) {
+		return err;
+	}
+	
+	let array2 = [];
+	
+	array.map(item => {
+		if(item !== null && typeof(item) !== 'undefined') array2.push(item.v);
+	})
 
   // магия, описать
   return array2; // return [1, 4]
